@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Go + HTMX Counter</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <style>
+    body { font-family: system-ui, sans-serif; display: grid; place-items: center;
+           min-height: 100vh; margin: 0; background: #0f172a; color: #e2e8f0; }
+    .card { text-align: center; padding: 2.5rem 3rem; background: #1e293b;
+            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+    h1 { margin: 0 0 .25rem; font-size: 1.25rem; font-weight: 600; }
+    p { margin: 0 0 1.5rem; color: #94a3b8; }
+    .value { font-size: 4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .buttons { display: flex; gap: .5rem; justify-content: center; margin-top: 1.5rem; }
+    button { font-size: 1.1rem; padding: .6rem 1.1rem; border: none; border-radius: 10px;
+             cursor: pointer; background: #334155; color: #e2e8f0; transition: background .15s; }
+    button:hover { background: #475569; }
+    button.primary { background: #6366f1; }
+    button.primary:hover { background: #818cf8; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Hello, world 👋</h1>
+    <p>A reactive counter, powered by Go &amp; HTMX</p>
+    <div class="value"><span id="count">0</span></div>
+    <div class="buttons">
+      <button data-delta="-1">−</button>
+      <button data-reset>reset</button>
+      <button class="primary" data-delta="1">+</button>
+    </div>
+  </main>
+
+  <script>
+    // Client-side reactive counter (static hosting has no Go backend).
+    const el = document.getElementById('count');
+    let n = 0;
+    const render = () => { el.textContent = n; };
+    document.querySelectorAll('[data-delta]').forEach(b =>
+      b.addEventListener('click', () => { n += Number(b.dataset.delta); render(); }));
+    document.querySelector('[data-reset]')
+      .addEventListener('click', () => { n = 0; render(); });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+    }
+  </script>
+</body>
+</html>

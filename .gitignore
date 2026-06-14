@@ -1,0 +1,25 @@
+# --- Go ---
+/main
+/go_htmx
+*.test
+*.out
+
+# --- Android (Bubblewrap / Gradle) ---
+android/.gradle/
+android/build/
+android/app/build/
+android/*.apk
+android/*.apk.idsig
+android/*.aab
+# Signing key — NEVER commit. Back this up somewhere private.
+android/*.keystore
+
+# --- iOS (Xcode) ---
+ios/build/
+ios/DerivedData/
+ios/**/xcuserdata/
+*.xcuserstate
+
+# --- macOS / tooling ---
+.DS_Store
+.claude/

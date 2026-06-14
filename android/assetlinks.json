@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.exploremelon.trigger",
+      "sha256_cert_fingerprints": [
+        "A5:74:41:83:E6:D4:71:60:27:5C:AA:32:1D:85:FF:65:92:DE:0C:2E:3D:10:A3:C6:57:DD:61:AC:05:CC:DB:05"
+      ]
+    }
+  }
+]
