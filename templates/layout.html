@@ -1,0 +1,54 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · Go + HTMX</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/static/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; display: flex; flex-direction: column;
+           min-height: 100vh; margin: 0; background: #0f172a; color: #e2e8f0; }
+    a { color: inherit; text-decoration: none; }
+
+    nav { display: flex; gap: .25rem; align-items: center; padding: .9rem 1.25rem;
+          background: #1e293b; border-bottom: 1px solid #334155; }
+    nav .brand { font-weight: 700; margin-right: auto; }
+    nav a.link { padding: .4rem .8rem; border-radius: 8px; color: #94a3b8; transition: all .15s; }
+    nav a.link:hover { background: #334155; color: #e2e8f0; }
+    nav a.link.active { background: #6366f1; color: #fff; }
+
+    #content { flex: 1; display: grid; place-items: center; padding: 2rem; }
+
+    footer { padding: 1rem 1.25rem; text-align: center; color: #64748b; font-size: .85rem;
+             border-top: 1px solid #334155; }
+
+    .card { text-align: center; padding: 2.5rem 3rem; background: #1e293b;
+            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.4); max-width: 28rem; }
+    h1 { margin: 0 0 .25rem; font-size: 1.25rem; font-weight: 600; }
+    .card p { margin: 0 0 1.5rem; color: #94a3b8; }
+    .value { font-size: 4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .buttons { display: flex; gap: .5rem; justify-content: center; margin-top: 1.5rem; }
+    button { font-size: 1.1rem; padding: .6rem 1.1rem; border: none; border-radius: 10px;
+             cursor: pointer; background: #334155; color: #e2e8f0; transition: background .15s; }
+    button:hover { background: #475569; }
+    button.primary { background: #6366f1; }
+    button.primary:hover { background: #818cf8; }
+  </style>
+</head>
+<body>
+  {{template "nav" .}}
+  <!-- HTMX swaps only the inside of #content when navigating (SPA-feel). -->
+  <main id="content">{{template "content" .}}</main>
+  {{template "footer" .}}
+</body>
+</html>{{end}}

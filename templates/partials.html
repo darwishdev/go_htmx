@@ -1,0 +1,11 @@
+{{define "nav"}}
+<nav>
+  <a class="brand" href="/" hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true">⚡ Counter</a>
+  <a class="link {{if eq .Active "home"}}active{{end}}"  href="/"      hx-get="/"      hx-target="#content" hx-swap="innerHTML" hx-push-url="true">Home</a>
+  <a class="link {{if eq .Active "about"}}active{{end}}" href="/about" hx-get="/about" hx-target="#content" hx-swap="innerHTML" hx-push-url="true">About</a>
+</nav>
+{{end}}
+
+{{define "footer"}}
+<footer>Built with Go &amp; HTMX · shared nav/footer via templates</footer>
+{{end}}

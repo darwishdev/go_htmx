@@ -1,0 +1,12 @@
+{{define "content"}}
+<section class="card">
+  <h1>Hello, world 👋</h1>
+  <p>A reactive counter, powered by Go &amp; HTMX</p>
+  <div class="value">{{template "count" .}}</div>
+  <div class="buttons">
+    <button hx-post="/decrement" hx-target="#count" hx-swap="outerHTML">−</button>
+    <button hx-post="/reset" hx-target="#count" hx-swap="outerHTML">reset</button>
+    <button class="primary" hx-post="/increment" hx-target="#count" hx-swap="outerHTML">+</button>
+  </div>
+</section>
+{{end}}

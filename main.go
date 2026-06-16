@@ -5,12 +5,14 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 )
 
 //go:embed static
 var staticFS embed.FS
+
+//go:embed templates
+var tmplFS embed.FS
 
 // counter is a tiny in-memory, concurrency-safe reactive value.
 type counter struct {
@@ -34,14 +36,38 @@ func (c *counter) value() int {
 var (
 	count = &counter{}
 
-	pageTmpl = template.Must(template.New("page").Parse(pageHTML))
+	// Each route is parsed together with the shared layout + nav/footer
+	// partials, so executing "layout" yields the full page and "content"
+	// yields just that route's body (the HTMX-swapped fragment).
+	homeTmpl  = parsePage("home.html")
+	aboutTmpl = parsePage("about.html")
 	// countTmpl renders just the counter fragment that HTMX swaps in.
-	countTmpl = template.Must(template.New("count").Parse(countHTML))
+	countTmpl = template.Must(template.ParseFS(tmplFS, "templates/count.html"))
 )
+
+// parsePage builds a template set from the layout, the shared partials, the
+// count fragment, and one route file — the Go analog of a Vue route reusing
+// the app layout and shared components.
+func parsePage(name string) *template.Template {
+	return template.Must(template.ParseFS(tmplFS,
+		"templates/layout.html",
+		"templates/partials.html",
+		"templates/count.html",
+		"templates/"+name,
+	))
+}
+
+// pageData is the view model handed to every route template.
+type pageData struct {
+	Title  string
+	Active string // which nav link to highlight: "home" | "about"
+	Count  int
+}
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", handleIndex)
+	mux.HandleFunc("GET /{$}", handleHome)
+	mux.HandleFunc("GET /about", handleAbout)
 	// Serve embedded static assets (icons) and PWA files at stable paths.
 	mux.Handle("GET /static/", http.FileServerFS(staticFS))
 	mux.HandleFunc("GET /manifest.json", serveStatic("static/manifest.json", "application/manifest+json"))
@@ -55,18 +81,22 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	render(w, pageTmpl, count.value())
+func handleHome(w http.ResponseWriter, r *http.Request) {
+	renderPage(w, r, homeTmpl, pageData{Title: "Home", Active: "home", Count: count.value()})
+}
+
+func handleAbout(w http.ResponseWriter, r *http.Request) {
+	renderPage(w, r, aboutTmpl, pageData{Title: "About", Active: "about"})
 }
 
 func handleDelta(delta int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		render(w, countTmpl, count.add(delta))
+		renderFragment(w, countTmpl, "count", pageData{Count: count.add(delta)})
 	}
 }
 
 func handleReset(w http.ResponseWriter, r *http.Request) {
-	render(w, countTmpl, count.add(-count.value()))
+	renderFragment(w, countTmpl, "count", pageData{Count: count.add(-count.value())})
 }
 
 func serveStatic(path, contentType string) http.HandlerFunc {
@@ -81,57 +111,20 @@ func serveStatic(path, contentType string) http.HandlerFunc {
 	}
 }
 
-func render(w http.ResponseWriter, t *template.Template, n int) {
+// renderPage writes a full document for a normal browser request, but only the
+// "content" block when HTMX asks for it (HX-Request header) — so nav clicks
+// swap just the middle of the page instead of reloading the whole shell.
+func renderPage(w http.ResponseWriter, r *http.Request, t *template.Template, data pageData) {
+	name := "layout"
+	if r.Header.Get("HX-Request") == "true" {
+		name = "content"
+	}
+	renderFragment(w, t, name, data)
+}
+
+func renderFragment(w http.ResponseWriter, t *template.Template, name string, data pageData) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := t.Execute(w, strconv.Itoa(n)); err != nil {
+	if err := t.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-const countHTML = `<span id="count">{{.}}</span>`
-
-const pageHTML = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Go + HTMX Counter</title>
-  <meta name="theme-color" content="#0f172a">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/static/icon-192.png">
-  <link rel="apple-touch-icon" href="/static/icon-192.png">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
-    }
-  </script>
-  <style>
-    body { font-family: system-ui, sans-serif; display: grid; place-items: center;
-           min-height: 100vh; margin: 0; background: #0f172a; color: #e2e8f0; }
-    .card { text-align: center; padding: 2.5rem 3rem; background: #1e293b;
-            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
-    h1 { margin: 0 0 .25rem; font-size: 1.25rem; font-weight: 600; }
-    p { margin: 0 0 1.5rem; color: #94a3b8; }
-    .value { font-size: 4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .buttons { display: flex; gap: .5rem; justify-content: center; margin-top: 1.5rem; }
-    button { font-size: 1.1rem; padding: .6rem 1.1rem; border: none; border-radius: 10px;
-             cursor: pointer; background: #334155; color: #e2e8f0; transition: background .15s; }
-    button:hover { background: #475569; }
-    button.primary { background: #6366f1; }
-    button.primary:hover { background: #818cf8; }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <h1>Hello, world 👋</h1>
-    <p>A reactive counter, powered by Go &amp; HTMX</p>
-    <div class="value"><span id="count">{{.}}</span></div>
-    <div class="buttons">
-      <button hx-post="/decrement" hx-target="#count" hx-swap="outerHTML">−</button>
-      <button hx-post="/reset" hx-target="#count" hx-swap="outerHTML">reset</button>
-      <button class="primary" hx-post="/increment" hx-target="#count" hx-swap="outerHTML">+</button>
-    </div>
-  </main>
-</body>
-</html>`
